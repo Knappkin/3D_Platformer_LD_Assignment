@@ -9,7 +9,8 @@ public class MoveToPoints : MonoBehaviour
 {
 	public float speed;										//how fast to move
 	public float delay;										//how long to wait at each waypoint
-	public type movementType;								//stop at final waypoint, loop through waypoints or move back n forth along waypoints
+	public type movementType;	
+	//stop at final waypoint, loop through waypoints or move back n forth along waypoints
 	
 	public enum type { PlayOnce, Loop, PingPong }
 	private int currentWp;
@@ -20,6 +21,11 @@ public class MoveToPoints : MonoBehaviour
 	private EnemyAI enemyAI;
 	private Rigidbody rigid;
 
+
+	//VARIABLES IM ADDING /////////
+	public bool waitPlat; // setting to decide whether to wait for player or not
+	private bool playerTouched; // boolean to tell if the player has touched the platform
+	private bool scanForPlayer; // Bool to tell fixed update to boxcast for player
 	//setup
 	void Awake()
 	{
@@ -54,52 +60,73 @@ public class MoveToPoints : MonoBehaviour
 	
 	void Update()
 	{
-		//if we've arrived at waypoint, get the next one
-		if(waypoints.Count > 0)
+		if (waitPlat && !playerTouched)
 		{
-			if(!arrived)
-			{
-				if (Vector3.Distance(transform.position, waypoints[currentWp].position) < 0.3f)
-				{
-					arrivalTime = Time.time;
-					arrived = true;
-				}
-			}
-			else
-			{
-				if(Time.time > arrivalTime + delay)
-				{
-					GetNextWP();
-					arrived = false;
-				}
-			}
+			scanForPlayer = true;
 		}
-		//if this is an enemy, move them toward the current waypoint
-		if(transform.tag == "Enemy" && waypoints.Count > 0)
+
+		if (!waitPlat || waitPlat && playerTouched)
 		{
-			if(!arrived)
+			//if we've arrived at waypoint, get the next one
+			if (waypoints.Count > 0)
 			{
-				characterMotor.MoveTo(waypoints[currentWp].position, enemyAI.acceleration, 0.1f, enemyAI.ignoreY);
-				//set animator
-				if(enemyAI.animatorController)
-					enemyAI.animatorController.SetBool("Moving", true);
+				if (!arrived)
+				{
+					if (Vector3.Distance(transform.position, waypoints[currentWp].position) < 0.3f)
+					{
+						arrivalTime = Time.time;
+						arrived = true;
+					}
+				}
+				else
+				{
+					if (Time.time > arrivalTime + delay)
+					{
+						GetNextWP();
+						arrived = false;
+					}
+				}
 			}
-			else
-				//set animator
-				if(enemyAI.animatorController)
+			//if this is an enemy, move them toward the current waypoint
+			if (transform.tag == "Enemy" && waypoints.Count > 0)
+			{
+				
+				if (!arrived)
+				{
+					characterMotor.MoveTo(waypoints[currentWp].position, enemyAI.acceleration, 0.1f, enemyAI.ignoreY);
+					//set animator
+					if (enemyAI.animatorController)
+						enemyAI.animatorController.SetBool("Moving", true);
+				}
+				else
+					//set animator
+					if (enemyAI.animatorController)
 					enemyAI.animatorController.SetBool("Moving", false);
+			}
 		}
 	}
 	
 	//if this is a platform move platforms toward waypoint
 	void FixedUpdate()
 	{
-		if(transform.tag != "Enemy")
+        if (scanForPlayer)
+        {
+            if (Physics.BoxCast(transform.position, Vector3.one, Vector3.up))
+            {
+                playerTouched = true;
+            }
+        }
+		if (!waitPlat || waitPlat && playerTouched)
 		{
-			if(!arrived && waypoints.Count > 0)
+
+
+			if (transform.tag != "Enemy")
 			{
-				Vector3 direction = waypoints[currentWp].position - transform.position;
-				rigid.MovePosition(transform.position + (direction.normalized * speed * Time.fixedDeltaTime));
+				if (!arrived && waypoints.Count > 0)
+				{
+					Vector3 direction = waypoints[currentWp].position - transform.position;
+					rigid.MovePosition(transform.position + (direction.normalized * speed * Time.fixedDeltaTime));
+				}
 			}
 		}
 	}
