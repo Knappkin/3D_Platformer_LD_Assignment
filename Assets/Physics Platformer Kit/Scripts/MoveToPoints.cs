@@ -23,12 +23,13 @@ public class MoveToPoints : MonoBehaviour
 
 
 	//VARIABLES IM ADDING /////////
-	public bool waitPlat; // setting to decide whether to wait for player or not
+	private bool waitPlat; // setting to decide whether to wait for player or not
 	private bool playerTouched; // boolean to tell if the player has touched the platform
 	private bool scanForPlayer; // Bool to tell fixed update to boxcast for player
 	//setup
 	void Awake()
 	{
+		waitPlat = false;
 		if(transform.tag != "Enemy")
 		{
 			//add kinematic rigidbody
